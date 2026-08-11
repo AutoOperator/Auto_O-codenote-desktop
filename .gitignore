@@ -1,0 +1,7 @@
+# 前端 A 由 sync_frontend.ps1 从 code-note-obsidian 复制（单一来源，不入 git）
+frontend/笔记主页.html
+frontend/static/
+
+# 构建产物
+build/
+bin/
