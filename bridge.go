@@ -97,12 +97,17 @@ func (b *Bridge) OpenNote(id string, title string, path string) (bool, error) {
 	if path != "" {
 		full = filepath.Join(dir, filepath.FromSlash(path))
 	} else if id != "" {
-		matches, _ := filepath.Glob(filepath.Join(dir, "*", id+".md"))
-		m2, _ := filepath.Glob(filepath.Join(dir, "*", id+"_*.md"))
-		matches = append(matches, m2...)
-		if len(matches) > 0 {
-			full = matches[0]
-		}
+		// 递归搜索 <id>.md / <id>_*.md（笔记在 代码笔记/算法笔记/<平台>/ 多级子目录）
+		filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() || full != "" {
+				return nil
+			}
+			base := d.Name()
+			if base == id+".md" || strings.HasPrefix(base, id+"_") && strings.HasSuffix(base, ".md") {
+				full = p
+			}
+			return nil
+		})
 	} else {
 		return false, errors.New("openNote: 缺少 id/path")
 	}

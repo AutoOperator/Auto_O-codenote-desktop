@@ -2,6 +2,9 @@
 frontend/笔记主页.html
 frontend/static/
 
+# wails 自动生成的前端绑定（wails dev 生成）
+frontend/wailsjs/
+
 # 构建产物
 build/
 bin/
