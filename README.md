@@ -22,11 +22,18 @@ code-note-desktop/
 ├── bridge.go          # C 桥接（NR_OB 等价接口，wails.Bind 暴露）
 ├── go.mod / wails.json
 ├── sync_frontend.ps1  # 从 code-note-obsidian 幂等复制 A（笔记主页.html + static/）
+├── assets/            # 应用图标源（入 git）
+│   ├── appicon.png    # 512x512 定稿图标（laptop 蓝色渐变底）
+│   └── appicon.svg    # 矢量源（SVGRepo laptop 参考改色）
 └── frontend/
     ├── 笔记主页.html        # A（sync 复制，不入 git）
     ├── obsidian-bridge.js   # C 包装（本仓库维护）
     └── static/              # 离线 vendor（sync 复制，不入 git）
 ```
+
+> 图标：`assets/appicon.png` 为源（入 git）。改图标后执行
+> `powershell -File assets/make-icon.ps1`（生成 build/appicon.png + build/windows/icon.ico 多尺寸，
+> wails 不会自动从 appicon.png 重新生成 icon.ico），再 `wails build`。
 
 ## 开发
 
