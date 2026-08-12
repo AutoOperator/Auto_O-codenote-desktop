@@ -4,10 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+	"unicode/utf8"
 )
 
 // Bridge 是 C 桥接（桌面版 Go 壳），实现与 obsidian-bridge.js 等价的 NR_OB 接口。
@@ -123,6 +130,53 @@ func (b *Bridge) OpenNote(id string, title string, path string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+// Fetch 网络抓取——C 提供网络能力：Wails 环境无 window.app.vault 且 UA 无 Electron，
+// A 侧直抓判定（bridgeApp||isElectron）两者皆 false，抓取被迫走 CORS 代理
+// （allorigins.win/Jina，国内网络不稳定）。由本方法代发 HTTP 请求（Go 无浏览器
+// CORS 限制，直连目标站），返回 {"status": <状态码>, "body": <响应体>}。
+// 响应体按 UTF-8 解码原样返回（HTML/JSON 均适用，非法序列替换为 U+FFFD）。
+// 站点特化：洛谷 API 必需 x-lentille-request 头；Jina Reader 指定纯文本返回
+// （与 A 侧原生抓取所带 headers 对齐）。
+// CookieJar 必需：洛谷对无 cookie 的请求回 302 循环（先种 cookie 再放行），
+// 无 Jar 时每次请求都是"首次"，永远 302——实测 200 需带 cookie。
+func (b *Bridge) Fetch(rawURL string) (map[string]string, error) {
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{Timeout: 15 * time.Second, Jar: jar}
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+	host := ""
+	if u, err := url.Parse(rawURL); err == nil {
+		host = u.Host
+	}
+	if strings.Contains(host, "luogu.com.cn") {
+		req.Header.Set("x-lentille-request", "content-only")
+	}
+	if strings.Contains(host, "r.jina.ai") {
+		req.Header.Set("Accept", "text/plain")
+		req.Header.Set("X-Return-Format", "text")
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	body := string(raw)
+	if !utf8.Valid(raw) {
+		body = strings.ToValidUTF8(body, "�")
+	}
+	return map[string]string{
+		"status": fmt.Sprintf("%d", resp.StatusCode),
+		"body":   body,
+	}, nil
 }
 
 // RecordQuestion 题目录入写文件。qJSON={path,md,...}，md 为 A 侧组装完成的完整笔记内容。

@@ -55,3 +55,4 @@ wails build
 | openNote(id, title, path) | 系统默认应用打开（无 path 按 id 搜索） |
 | recordQuestion(q) | 题目录入写文件（q={path,md}） |
 | getSettings() | JSON {vaultName, vaultPath} |
+| fetch(url) | 网络抓取（Go 无 CORS 直连，返回 fetch Response 兼容子集 {ok,status,text(),json()}） |

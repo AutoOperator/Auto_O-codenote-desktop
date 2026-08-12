@@ -25,7 +25,21 @@
     saveNote: function(md, meta){ return goBridge ? goBridge.SaveNote(md, JSON.stringify(meta||{})) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     openNote: function(id, title, path){ return goBridge ? goBridge.OpenNote(id||'', title||'', path||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     recordQuestion: function(q){ return goBridge ? goBridge.RecordQuestion(JSON.stringify(q||{})) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
-    getSettings: function(){ return goBridge ? goBridge.GetSettings().then(function(s){ try{ return JSON.parse(s); }catch(e){ return {}; } }) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); }
+    getSettings: function(){ return goBridge ? goBridge.GetSettings().then(function(s){ try{ return JSON.parse(s); }catch(e){ return {}; } }) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
+    // 网络抓取：C 桥接代发（Go 无浏览器 CORS 限制），返回 fetch Response 兼容子集
+    // （A 侧直抓代码用 res.ok / res.status / res.text() / res.json()）
+    fetch: function(url){
+      return goBridge ? goBridge.Fetch(url).then(function(r){
+        var body = r.body || '';
+        var status = parseInt(r.status, 10) || 0;
+        return {
+          ok: status >= 200 && status < 300,
+          status: status,
+          text: function(){ return Promise.resolve(body); },
+          json: function(){ try{ return Promise.resolve(JSON.parse(body)); }catch(e){ return Promise.reject(e); } }
+        };
+      }) : Promise.reject(new Error('[NR_OB] 桥接未绑定'));
+    }
   };
   console.log('[NR_OB] 桌面桥接就绪：'+Object.keys(window.NR_OB).join(','));
 })();
