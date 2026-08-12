@@ -201,6 +201,30 @@ func (b *Bridge) RecordQuestion(qJSON string) (map[string]string, error) {
 	return map[string]string{"path": full}, nil
 }
 
+// DeleteNote 删除笔记文件。path 为 vault 相对路径（writeRelative 同款路径校验防穿越）；
+// 文件不存在返回 false（不报错——目标状态已达成）；删除成功返回 true。
+func (b *Bridge) DeleteNote(path string) (bool, error) {
+	dir, err := b.ensureNotesDir()
+	if err != nil {
+		return false, err
+	}
+	clean := filepath.Clean(filepath.FromSlash(path))
+	if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return false, errors.New("非法路径: " + path)
+	}
+	full := filepath.Join(dir, clean)
+	if _, err := os.Stat(full); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	if err := os.Remove(full); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // writeRelative 写 vault 相对路径文件（自动建目录链）；防目录穿越
 func (b *Bridge) writeRelative(rel string, content string) (string, error) {
 	dir, err := b.ensureNotesDir()
