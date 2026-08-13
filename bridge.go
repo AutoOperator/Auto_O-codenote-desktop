@@ -258,19 +258,21 @@ func (b *Bridge) mainWindow() (uintptr, error) {
 	return found, nil
 }
 
-// SetTitleBarMode 标题栏深浅模式跟随应用主题（DWM DWMWA_USE_IMMERSIVE_DARK_MODE=20，
+// SetTitleBarMode 标题栏深浅模式跟随应用主题（DWM DWMWA_USE_IMMERSIVE_DARK_MODE，
 // Win11 标准可靠 API：dark=true 深色标题栏浅色文字，false 浅色标题栏深色文字）。
+// 实现对齐 wails v2 内部（win32.SetTheme）：int32 值（BOOL 语义）、属性 20
+// （Win10 18985+/Win11 均支持；更早版本用 19 但 wails 最低支持 17763——本机 Win11 用 20）。
 // 失败返回错误（A 侧静默忽略——浏览器/Obsidian 环境无此能力）。
 func (b *Bridge) SetTitleBarMode(dark bool) error {
 	hwnd, err := b.mainWindow()
 	if err != nil {
 		return err
 	}
-	v := uint32(0)
+	var v int32 // wails 内部同款：int32（BOOL）
 	if dark {
 		v = 1
 	}
-	ret, _, _ := procDwmSetWindowAttribute.Call(hwnd, dwmwaUseImmersiveDarkMode, uintptr(unsafe.Pointer(&v)), 4)
+	ret, _, _ := procDwmSetWindowAttribute.Call(hwnd, dwmwaUseImmersiveDarkMode, uintptr(unsafe.Pointer(&v)), unsafe.Sizeof(v))
 	if int32(ret) != 0 {
 		return fmt.Errorf("DwmSetWindowAttribute 失败: 0x%x", uint32(ret))
 	}

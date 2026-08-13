@@ -18,6 +18,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	wailsWindows "github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
 var (
@@ -138,10 +139,30 @@ func main() {
 	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--no-proxy-server --remote-debugging-port=9223")
 	bridge := NewBridge()
 
+	// 标题栏主题兜底（启动静态配置，对齐 wails ThemeSettings；动态切换由 A 侧
+	// DWM 调用实现）：默认主题 paper-dark → 深色标题栏，浅色主题对应浅色配置
+	titleTheme := &wailsWindows.ThemeSettings{
+		DarkModeTitleBar:           wailsWindows.RGB(0x1a, 0x1d, 0x23),
+		DarkModeTitleBarInactive:   wailsWindows.RGB(0x1a, 0x1d, 0x23),
+		DarkModeTitleText:          wailsWindows.RGB(0xd8, 0xdd, 0xe4),
+		DarkModeTitleTextInactive:  wailsWindows.RGB(0x9a, 0xa3, 0xb0),
+		DarkModeBorder:             wailsWindows.RGB(0x2a, 0x2f, 0x38),
+		DarkModeBorderInactive:     wailsWindows.RGB(0x2a, 0x2f, 0x38),
+		LightModeTitleBar:          wailsWindows.RGB(0xed, 0xe4, 0xd3),
+		LightModeTitleBarInactive:  wailsWindows.RGB(0xed, 0xe4, 0xd3),
+		LightModeTitleText:         wailsWindows.RGB(0x3a, 0x35, 0x30),
+		LightModeTitleTextInactive: wailsWindows.RGB(0x5c, 0x52, 0x48),
+		LightModeBorder:            wailsWindows.RGB(0xcd, 0xbf, 0xa8),
+		LightModeBorderInactive:    wailsWindows.RGB(0xcd, 0xbf, 0xa8),
+	}
 	err = wails.Run(&options.App{
 		Title:  "Auto_O算法笔记",
 		Width:  1200,
 		Height: 800,
+		Windows: &wailsWindows.Options{
+			Theme:       wailsWindows.Dark, // 启动默认深色标题栏（与 A 侧默认主题 paper-dark 一致）
+			CustomTheme: titleTheme,
+		},
 		AssetServer: &assetserver.Options{
 			Handler: assetHandler(),
 		},
