@@ -139,7 +139,7 @@ func main() {
 	bridge := NewBridge()
 
 	err = wails.Run(&options.App{
-		Title:  "Auto算法笔记",
+		Title:  "Auto_O算法笔记",
 		Width:  1200,
 		Height: 800,
 		AssetServer: &assetserver.Options{
