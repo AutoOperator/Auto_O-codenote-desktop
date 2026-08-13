@@ -201,6 +201,18 @@ func (b *Bridge) RecordQuestion(qJSON string) (map[string]string, error) {
 	return map[string]string{"path": full}, nil
 }
 
+// OpenURL 系统默认浏览器打开链接（关注按钮等外链；WebView2 内 window.open 无多窗口支持）
+func (b *Bridge) OpenURL(rawURL string) error {
+	if rawURL == "" {
+		return errors.New("openUrl: url 为空")
+	}
+	cmd := exec.Command("cmd", "/c", "start", "", rawURL)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // DeleteNote 删除笔记文件。path 为 vault 相对路径（writeRelative 同款路径校验防穿越）；
 // 文件不存在返回 false（不报错——目标状态已达成）；删除成功返回 true。
 func (b *Bridge) DeleteNote(path string) (bool, error) {

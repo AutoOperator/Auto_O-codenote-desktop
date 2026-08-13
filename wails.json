@@ -11,7 +11,8 @@
     "email": ""
   },
   "info": {
+    "productName": "Auto算法笔记",
     "productVersion": "1.0.0",
-    "comments": "代码笔记桌面版（A+C 架构：通用核心 A + Go 桥接 C）"
+    "comments": "Auto算法笔记 桌面版（A+C 架构：通用核心 A + Go 桥接 C）"
   }
 }
