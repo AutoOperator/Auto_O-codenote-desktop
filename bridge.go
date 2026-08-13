@@ -24,11 +24,12 @@ var (
 	procDwmSetWindowAttribute = dwmapiDll.NewProc("DwmSetWindowAttribute")
 )
 
-// DWM 窗口属性（Windows 11 支持标题栏着色）
+// DWM 窗口属性（Windows 11 支持标题栏深浅/着色）
 const (
-	dwmwaBorderColor  = 34 // 窗口边框颜色
-	dwmwaCaptionColor = 35 // 标题栏背景颜色
-	dwmwaTextColor    = 36 // 标题栏文字颜色
+	dwmwaUseImmersiveDarkMode = 20 // 标题栏深浅模式（BOOL；Win11 标准可靠 API）
+	dwmwaBorderColor          = 34 // 窗口边框颜色
+	dwmwaCaptionColor         = 35 // 标题栏背景颜色
+	dwmwaTextColor            = 36 // 标题栏文字颜色
 )
 
 // Bridge 是 C 桥接（桌面版 Go 壳），实现与 obsidian-bridge.js 等价的 NR_OB 接口。
@@ -257,26 +258,38 @@ func (b *Bridge) mainWindow() (uintptr, error) {
 	return found, nil
 }
 
-// SetTitleBarColor 标题栏颜色跟随应用主题（DWM：DWMWA_CAPTION_COLOR 背景 /
-// DWMWA_TEXT_COLOR 文字 / DWMWA_BORDER_COLOR 边框；入参 #RRGGBB）。
+// SetTitleBarMode 标题栏深浅模式跟随应用主题（DWM DWMWA_USE_IMMERSIVE_DARK_MODE=20，
+// Win11 标准可靠 API：dark=true 深色标题栏浅色文字，false 浅色标题栏深色文字）。
 // 失败返回错误（A 侧静默忽略——浏览器/Obsidian 环境无此能力）。
-func (b *Bridge) SetTitleBarColor(bgHex string, textHex string) error {
+func (b *Bridge) SetTitleBarMode(dark bool) error {
 	hwnd, err := b.mainWindow()
 	if err != nil {
 		return err
 	}
+	v := uint32(0)
+	if dark {
+		v = 1
+	}
+	ret, _, _ := procDwmSetWindowAttribute.Call(hwnd, dwmwaUseImmersiveDarkMode, uintptr(unsafe.Pointer(&v)), 4)
+	if int32(ret) != 0 {
+		return fmt.Errorf("DwmSetWindowAttribute 失败: 0x%x", uint32(ret))
+	}
+	return nil
+}
+
+// SetTitleBarColor 旧版按背景深浅推断并转 SetTitleBarMode（自定义色 DWM 在部分
+// Win11 版本不生效，深浅模式为标准可靠路径；保留兼容 A 侧旧调用）
+func (b *Bridge) SetTitleBarColor(bgHex string, textHex string) error {
 	bg, err := colorRef(bgHex)
 	if err != nil {
 		return err
 	}
-	tx, err := colorRef(textHex)
-	if err != nil {
-		return err
-	}
-	procDwmSetWindowAttribute.Call(hwnd, dwmwaBorderColor, uintptr(unsafe.Pointer(&bg)), 4)
-	procDwmSetWindowAttribute.Call(hwnd, dwmwaCaptionColor, uintptr(unsafe.Pointer(&bg)), 4)
-	procDwmSetWindowAttribute.Call(hwnd, dwmwaTextColor, uintptr(unsafe.Pointer(&tx)), 4)
-	return nil
+	// 背景亮度判定（BT.601 亮度权重）：暗背景 → 深色标题栏
+	r := (bg >> 16) & 0xFF
+	g := (bg >> 8) & 0xFF
+	bl := bg & 0xFF
+	luma := (299*r + 587*g + 114*bl) / 1000
+	return b.SetTitleBarMode(luma < 128)
 }
 
 // OpenURL 系统默认浏览器打开链接（关注按钮等外链；WebView2 内 window.open 无多窗口支持）

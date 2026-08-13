@@ -30,6 +30,8 @@
     openUrl: function(url){ return goBridge ? goBridge.OpenURL(url||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     // 标题栏颜色跟随主题：DWM 动态着色（bgHex/textHex 为 #RRGGBB）；无此能力的环境静默
     setTitleBarColor: function(bgHex, textHex){ return goBridge ? goBridge.SetTitleBarColor(bgHex||'', textHex||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
+    // 标题栏深浅模式：DWM immersive dark mode（dark=深色标题栏浅色文字）；无此能力的环境静默
+    setTitleBarMode: function(dark){ return goBridge ? goBridge.SetTitleBarMode(!!dark) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     recordQuestion: function(q){ return goBridge ? goBridge.RecordQuestion(JSON.stringify(q||{})) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     getSettings: function(){ return goBridge ? goBridge.GetSettings().then(function(s){ try{ return JSON.parse(s); }catch(e){ return {}; } }) : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     // 网络抓取：C 桥接代发（Go 无浏览器 CORS 限制），返回 fetch Response 兼容子集
