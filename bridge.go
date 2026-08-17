@@ -333,14 +333,21 @@ func (b *Bridge) DeleteNote(path string) (bool, error) {
 // DeleteNoteVariants 按题号删除全部变体笔记文件。
 // id 前缀匹配 notes 目录下 <id>_*.md（同题号多次生成/重命名会产生多文件，
 // 单文件删除会残留旧变体）；同时兜底删除 path 指定的单文件。
-// 返回 (达成目标 bool, 实际删除数 int, error)：
-//   - 文件不存在（幽灵项/已删过）→ 目标已达成，返回 (true, 0, nil)——不误报失败
-//   - 文件存在且删除成功 → (true, n, nil)
-//   - 文件存在但删除失败 → (false, n, err)
-func (b *Bridge) DeleteNoteVariants(id string, path string) (bool, int, error) {
+// 返回 JSON 字符串 {"ok":bool,"removed":int}（单返回值，规避 wails 多返回值绑定歧义）：
+//   - 文件不存在（幽灵项/已删过）→ ok=true（目标已达成），不误报失败
+//   - 文件存在且删除成功 → ok=true, removed=n
+//   - 文件存在但删除失败 → ok=false, removed=n
+func (b *Bridge) DeleteNoteVariants(id string, path string) string {
+	// 调试日志：记录调用参数（exe 同级 delete_debug.log）
+	{
+		exe, _ := os.Executable()
+		logPath := filepath.Join(filepath.Dir(exe), "delete_debug.log")
+		entry := time.Now().Format("2006-01-02 15:04:05.000") + " id=" + id + " path=" + path + "\n"
+		os.WriteFile(logPath, []byte(entry), 0644)
+	}
 	dir, err := b.ensureNotesDir()
 	if err != nil {
-		return false, 0, err
+		return "{\"ok\":false,\"removed\":0}"
 	}
 	removed := 0
 	failErr := error(nil)
@@ -380,9 +387,9 @@ func (b *Bridge) DeleteNoteVariants(id string, path string) (bool, int, error) {
 		}
 	}
 	if failErr != nil {
-		return false, removed, failErr
+		return fmt.Sprintf("{\"ok\":false,\"removed\":%d}", removed)
 	}
-	return true, removed, nil
+	return fmt.Sprintf("{\"ok\":true,\"removed\":%d}", removed)
 }
 
 // writeRelative 写 vault 相对路径文件（自动建目录链）；防目录穿越

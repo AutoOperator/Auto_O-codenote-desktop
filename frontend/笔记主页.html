@@ -3853,11 +3853,14 @@ function initContextMenu(){
       };
       const del=()=>{
         if((p.id||p.note_path)&&window.NR_OB&&window.NR_OB.deleteNoteVariants){
-          // 返回 [ok, removed, err]：ok=true 表示删除目标已达成（文件不存在也算达成，
-          // 幽灵项不再误报失败）；removed 为实际删除文件数
+          // Go 侧返回 JSON 字符串 {"ok":bool,"removed":int}：ok=true 表示删除目标已达成
+          // （文件不存在也算达成，幽灵项不再误报失败）；removed 为实际删除文件数
           return window.NR_OB.deleteNoteVariants(p.id||'',p.note_path||'').then(r=>{
-            const ok=Array.isArray(r)?r[0]:!!r;
-            const removed=Array.isArray(r)?(r[1]||0):0;
+            let res=null;
+            try{res=typeof r==='string'?JSON.parse(r):r;}catch(e){}
+            if(res===null&&typeof r==='object'&&r!==null)res=r;
+            const ok=!!(res&&res.ok);
+            const removed=(res&&res.removed)||0;
             if(ok){
               console.log('[delete] removed '+removed+' variant file(s) for id:',p.id);
               if(typeof showToast==='function')showToast(removed>0?'已删除（文件已同步删除）':'已删除（无残留文件）');
