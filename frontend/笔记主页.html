@@ -3848,10 +3848,7 @@ function initContextMenu(){
       const delFail=(reason)=>{
         if(typeof showToast==='function')showToast('⚠ 笔记文件删除失败（文件仍存在，刷新数据可能重新导入）');
         if(typeof confirm==='function'){
-          try{confirm('⚠ 笔记文件删除失败'+(reason?('：'+reason):'')+'
-
-文件仍存在，刷新数据可能重新导入。
-可在 notes 目录手动删除，或忽略（界面已移除本题）。');}catch(e){}
+          try{confirm('⚠ 笔记文件删除失败'+(reason?('：'+reason):'')+'\n\n文件仍存在，刷新数据可能重新导入。\n可在 notes 目录手动删除，或忽略（界面已移除本题）。');}catch(e){}
         }
       };
       const del=()=>{
