@@ -1,10 +1,12 @@
-# 前端 A 由 sync_frontend.ps1 从 code-note-obsidian 复制（单一来源，不入 git）
-frontend/笔记主页.html
-frontend/static/
+# 前端 A（笔记主页.html + static/）随仓库发布（单一来源仍为 code-note-obsidian，
+# sync_frontend.ps1 幂等同步，仓库内为发布快照）
 
 # wails 自动生成的前端绑定（wails dev 生成）
 frontend/wailsjs/
 
-# 构建产物
-build/
+# 构建产物（仅 bin 目录；build/windows 模板 + build/appicon.png 需入库供 wails build）
+build/bin/
 bin/
+
+# 本地验收截图（隐私，不入库）
+desktop-accept.png
