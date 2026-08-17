@@ -26,6 +26,9 @@
     openNote: function(id, title, path){ return goBridge ? goBridge.OpenNote(id||'', title||'', path||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     // 删除笔记：Go 侧 os.Remove（同款路径校验防穿越）；文件不存在 resolve false
     deleteNote: function(path){ return goBridge ? goBridge.DeleteNote(path||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
+    // 按题号删除全部变体：id 前缀匹配 notes 下 <id>_*.md 一次清干净（同题号重生成残留），
+    // 返回删除文件数（>0 成功）；path 为兜底单文件
+    deleteNoteVariants: function(id, path){ return goBridge ? goBridge.DeleteNoteVariants(id||'', path||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     // 外链打开：Go 侧系统默认浏览器（WebView2 内 window.open 无多窗口支持）
     openUrl: function(url){ return goBridge ? goBridge.OpenURL(url||'') : Promise.reject(new Error('[NR_OB] 桥接未绑定')); },
     // 标题栏颜色跟随主题：DWM 动态着色（bgHex/textHex 为 #RRGGBB）；无此能力的环境静默

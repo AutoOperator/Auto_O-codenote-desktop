@@ -330,6 +330,46 @@ func (b *Bridge) DeleteNote(path string) (bool, error) {
 	return true, nil
 }
 
+// DeleteNoteVariants 按题号删除全部变体笔记文件。
+// id 前缀匹配 notes 目录下 <id>_*.md（同题号多次生成/重命名会产生多文件，
+// 单文件删除会残留旧变体），返回实际删除的文件数。
+// 同时兜底删除 path 指定的单文件（兼容 note_path 与 id 不一致的旧数据）。
+func (b *Bridge) DeleteNoteVariants(id string, path string) (int, error) {
+	dir, err := b.ensureNotesDir()
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	if id != "" {
+		prefix := id + "_"
+		filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			name := d.Name()
+			if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ".md") {
+				if os.Remove(p) == nil {
+					removed++
+				}
+			}
+			return nil
+		})
+	}
+	// 兜底：note_path 单文件（id 匹配未覆盖时）
+	if removed == 0 && path != "" {
+		clean := filepath.Clean(filepath.FromSlash(path))
+		if !filepath.IsAbs(clean) && clean != ".." && !strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			full := filepath.Join(dir, clean)
+			if _, err := os.Stat(full); err == nil {
+				if os.Remove(full) == nil {
+					removed++
+				}
+			}
+		}
+	}
+	return removed, nil
+}
+
 // writeRelative 写 vault 相对路径文件（自动建目录链）；防目录穿越
 func (b *Bridge) writeRelative(rel string, content string) (string, error) {
 	dir, err := b.ensureNotesDir()

@@ -3841,13 +3841,28 @@ function initContextMenu(){
       btn.dataset.confirm='0';
       btn.textContent='删除题目';
       btn.style.background='';
-      // 异步删除笔记文件（不阻塞 UI；优先 NR_OB.deleteNote——Obsidian B 桥接
-      // adapter.remove / 桌面 C 桥接 os.Remove，成功提示「文件已同步删除」；
-      // 无 NR_OB 能力时走 __intake.deleteNoteFile 降级（FSA 授权目录等））
-      const delFail=()=>{
+      // 异步删除笔记文件（不阻塞 UI）：
+      // ① 桌面 C 桥接优先 deleteNoteVariants——按题号清理全部变体文件（同题号多次生成/重命名
+      //    产生多文件，单文件删除会残留），返回删除数；失败弹窗明确告知而非静默
+      // ② Obsidian B 桥接 __intake.deleteNoteFile（FSA 授权目录，已含变体清理）
+      const delFail=(reason)=>{
         if(typeof showToast==='function')showToast('⚠ 笔记文件删除失败（文件仍存在，刷新数据可能重新导入）');
+        if(typeof confirm==='function'){
+          try{confirm('⚠ 笔记文件删除失败'+(reason?('：'+reason):'')+'
+
+文件仍存在，刷新数据可能重新导入。
+可在 notes 目录手动删除，或忽略（界面已移除本题）。');}catch(e){}
+        }
       };
       const del=()=>{
+        if((p.id||p.note_path)&&window.NR_OB&&window.NR_OB.deleteNoteVariants){
+          return window.NR_OB.deleteNoteVariants(p.id||'',p.note_path||'').then(n=>{
+            if(n>0){
+              console.log('[delete] removed '+n+' variant file(s) for id:',p.id);
+              if(typeof showToast==='function')showToast('已删除（文件已同步删除）');
+            }else delFail('未找到匹配的笔记文件');
+          }).catch(e=>{console.warn('[delete] NR_OB error:',e);delFail(String(e&&e.message||e));});
+        }
         if(p.note_path&&window.NR_OB&&window.NR_OB.deleteNote){
           return window.NR_OB.deleteNote(p.note_path).then(ok=>{
             if(ok){
@@ -6213,9 +6228,26 @@ function closeOiwiki(){
    Toast
    ============================================================ */
 let toastTimer;
-function showToast(msg){
+// Toast 队列：连续 showToast 不互相覆盖（后一条在前一条消失后显示），
+// 避免删除失败等提示被紧随其后的成功提示吞掉
+const __toastQueue=[];
+let __toastBusy=false;
+function __toastNext(){
+  if(__toastBusy)return;
+  const msg=__toastQueue.shift();
+  if(msg===undefined)return;
+  __toastBusy=true;
   const t=$('#toast');t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{
+    t.classList.remove('show');
+    __toastBusy=false;
+    if(__toastQueue.length){setTimeout(__toastNext,150);}
+  },2200);
+}
+function showToast(msg){
+  __toastQueue.push(String(msg));
+  __toastNext();
 }
 
 /* ============================================================
