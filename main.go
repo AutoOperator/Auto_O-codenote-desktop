@@ -93,7 +93,7 @@ func ensureSingleInstance() (func(), error) {
 		exePath = exe
 	}
 	sum := md5.Sum([]byte(exePath))
-	name := "Local\\CodeNoteDesktop_" + hex.EncodeToString(sum[:8])
+	name := "Local\\AutoOCodenoteDesktop_" + hex.EncodeToString(sum[:8])
 	mutexName, _ := syscall.UTF16PtrFromString(name)
 	h, _, errCode := procCreateMutexW.Call(0, 0, uintptr(unsafe.Pointer(mutexName)))
 	if h == 0 {

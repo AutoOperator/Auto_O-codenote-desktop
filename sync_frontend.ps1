@@ -1,5 +1,5 @@
-﻿# ============================================================
-# sync_frontend.ps1 — 前端 A 同步：code-note-obsidian → code-note-desktop/frontend
+# ============================================================
+# sync_frontend.ps1 — 前端 A 同步：code-note-obsidian → Auto_O-codenote-desktop/frontend
 #
 # A（笔记主页.html + static/）单一来源为 code-note-obsidian 仓库，
 # 本脚本幂等复制到桌面壳（SHA256 哈希比对，未变更跳过）。

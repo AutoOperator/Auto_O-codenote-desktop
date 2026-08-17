@@ -1,4 +1,4 @@
-module code-note-desktop
+module auto-o-codenote-desktop
 
 go 1.26.4
 

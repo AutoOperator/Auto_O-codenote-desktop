@@ -1,6 +1,6 @@
 {
-  "name": "code-note-desktop",
-  "outputfilename": "code-note-desktop",
+  "name": "Auto_O-codenote-desktop",
+  "outputfilename": "Auto_O-codenote-desktop",
   "frontend:dir": "frontend",
   "frontend:build": "",
   "frontend:install": "",
